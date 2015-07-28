@@ -12,6 +12,11 @@ if (typeof SIMD !== 'undefined') {
     if(SIMD.Float32x4 === undefined) {
         SIMD.Float32x4 = SIMD.float32x4;
     }
+    if(SIMD.Float32x4.extractLane === undefined) {
+        SIMD.Float32x4.extractLane = function () {
+            return 0;
+        };
+    }
     console.log('SIMD mode enabled');
     THREE.Matrix4.prototype.multiplyMatrices = function (a, b) {
         var ae = a.elements,

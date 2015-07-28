@@ -8,8 +8,10 @@ This is still work in progress so use at your own risk! When this project will b
 */
  
 'use strict';
-// SIMD.Float32x4 is also being checked just in case old Chromium SIMD is present. This extension will not work with Intel's Chromium build
-if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
+if (typeof SIMD !== 'undefined') {
+    if(SIMD.Float32x4 === undefined) {
+        SIMD.Float32x4 = SIMD.float32x4;
+    }
     console.log('SIMD mode enabled');
     THREE.Matrix4.prototype.multiplyMatrices = function (a, b) {
         var ae = a.elements,
@@ -71,7 +73,7 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
         this.simd = SIMD.Float32x4(x || 0, y || 0, z || 0, (w !== undefined) ? w : 1);
         Object.defineProperty(this, 'x', {
             get: function () {
-                return SIMD.Float32x4.extractLane(_this.simd, 0);
+                return _this.simd.x || SIMD.Float32x4.extractLane(_this.simd, 0);
             },
             set: function (val) {
                 _this.setX(val);
@@ -79,7 +81,7 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
         });
         Object.defineProperty(this, 'y', {
             get: function () {
-                return SIMD.Float32x4.extractLane(_this.simd, 1);
+                return _this.simd.y || SIMD.Float32x4.extractLane(_this.simd, 1);
             },
             set: function (val) {
                 _this.setY(val);
@@ -87,7 +89,7 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
         });
         Object.defineProperty(this, 'z', {
             get: function () {
-                return SIMD.Float32x4.extractLane(_this.simd, 2);
+                return _this.simd.z || SIMD.Float32x4.extractLane(_this.simd, 2);
             },
             set: function (val) {
                 _this.setZ(val);
@@ -95,7 +97,7 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
         });
         Object.defineProperty(this, 'w', {
             get: function () {
-                return SIMD.Float32x4.extractLane(_this.simd, 3);
+                return _this.simd.w || SIMD.Float32x4.extractLane(_this.simd, 3);
             },
             set: function (val) {
                 _this.setW(val);
@@ -129,7 +131,18 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
         },
 
         getComponent: function (index) {
-            SIMD.Float32x4.extractLane(this.simd, index);
+            if(SIMD.Float32x4.extractLane === undefined) {
+                if(index === 0) {
+                    return _this.simd.x;
+                } else if(index === 1) {
+                    return _this.simd.y;
+                } else if(index === 2) {
+                    return _this.simd.z;
+                } else if(index === 3) {
+                    return _this.simd.w;
+                }
+            }
+            return SIMD.Float32x4.extractLane(this.simd, index);
         },
         copy: function (v) {
             this.simd = SIMD.Float32x4.check(v);
@@ -657,9 +670,9 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
                     SIMD.Float32x4.splat(z))
                 );
 
-            this.x = SIMD.Float32x4.extractLane(res, 0);
-            this.y = SIMD.Float32x4.extractLane(res, 1);
-            this.z = SIMD.Float32x4.extractLane(res, 2);
+            this.x = res.x || SIMD.Float32x4.extractLane(res, 0);
+            this.y = res.y || SIMD.Float32x4.extractLane(res, 1);
+            this.z = res.z || SIMD.Float32x4.extractLane(res, 2);
 
             return this;
 
@@ -681,9 +694,9 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
                 SIMD.Float32x4.add(SIMD.Float32x4.mul(arr1, arr2), SIMD.Float32x4.mul(arr3, arr4)),
                 SIMD.Float32x4.add(SIMD.Float32x4.mul(arr5, arr6), arr7)
             );
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x || SIMD.Float32x4.extractLane(this.simd, 0);
+            this.y = this.simd.y || SIMD.Float32x4.extractLane(this.simd, 1);
+            this.z = this.simd.z || SIMD.Float32x4.extractLane(this.simd, 2);
 
             return this;
         };
@@ -720,9 +733,9 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
                 SIMD.Float32x4(arr8)
             );
             
-            this.x = SIMD.Float32x4.extractLane(res, 0);
-            this.y = SIMD.Float32x4.extractLane(res, 1);
-            this.z = SIMD.Float32x4.extractLane(res, 2);
+            this.x = res.x || SIMD.Float32x4.extractLane(res, 0);
+            this.y = res.y || SIMD.Float32x4.extractLane(res, 1);
+            this.z = res.z || SIMD.Float32x4.extractLane(res, 2);
 
             return this;
 
@@ -776,9 +789,9 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
                     SIMD.Float32x4(res[2], res[0], res[1], 0), SIMD.Float32x4(-qy, -qz, -qx, 0)
                 )
             );
-            this.x = SIMD.Float32x4.extractLane(res, 0);
-            this.y = SIMD.Float32x4.extractLane(res, 1);
-            this.z = SIMD.Float32x4.extractLane(res, 2);
+            this.x = res.x || SIMD.Float32x4.extractLane(res, 0);
+            this.y = res.y || SIMD.Float32x4.extractLane(res, 1);
+            this.z = res.z || SIMD.Float32x4.extractLane(res, 2);
 
             return this;
 

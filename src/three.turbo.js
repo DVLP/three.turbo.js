@@ -15,10 +15,10 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
         var ae = a.elements,
             be = b.elements,
             tb = this.elements,
-            arr1 = SIMD.Float32x4(ae[0], ae[1], ae[2], ae[3]),
-            arr3 = SIMD.Float32x4(ae[4], ae[5], ae[6], ae[7]),
-            arr5 = SIMD.Float32x4(ae[8], ae[9], ae[10], ae[11]),
-            arr7 = SIMD.Float32x4(ae[12], ae[13], ae[14], ae[15]),
+            arr1 = SIMD.Float32x4.load(ae, 0),
+            arr3 = SIMD.Float32x4.load(ae, 4),
+            arr5 = SIMD.Float32x4.load(ae, 8),
+            arr7 = SIMD.Float32x4.load(ae, 12),
             arr2,
             arr4,
             arr6,
@@ -173,13 +173,13 @@ if (typeof SIMD !== 'undefined' && SIMD.Float32x4) {
         },
         applyMatrix4: function (m) {
             var e = m.elements;
-            var arr1 = SIMD.Float32x4(e[0], e[1], e[2], e[3]);
+            var arr1 = SIMD.Float32x4.load(e, 0);
             var arr2 = SIMD.Float32x4.splat(this.x);
-            var arr3 = SIMD.Float32x4(e[4], e[5], e[6], e[7]);
+            var arr3 = SIMD.Float32x4.load(e, 4);
             var arr4 = SIMD.Float32x4.splat(this.y);
-            var arr5 = SIMD.Float32x4(e[8], e[9], e[10], e[11]);
+            var arr5 = SIMD.Float32x4.load(e, 8);
             var arr6 = SIMD.Float32x4.splat(this.z);
-            var arr7 = SIMD.Float32x4(e[12], e[13], e[14], e[15]);
+            var arr7 = SIMD.Float32x4.load(e, 12);
             var arr8 = SIMD.Float32x4.splat(this.w);
 
             this.simd = SIMD.Float32x4.add(

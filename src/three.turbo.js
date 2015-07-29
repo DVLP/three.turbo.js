@@ -23,6 +23,7 @@ if (typeof SIMD !== 'undefined') {
         });
     }
     console.log('SIMD mode enabled');
+    THREE.Matrix4.prototype.oldMultiplyMatrices = THREE.Matrix4.prototype.multiplyMatrices;
     THREE.Matrix4.prototype.multiplyMatrices = function (a, b) {
         var ae = a.elements,
             be = b.elements,
@@ -37,8 +38,8 @@ if (typeof SIMD !== 'undefined') {
             arr8,
             res;
 
-        /* calculated version
-        for (var i = 0; i < 4; i++) {
+        // calculated version
+        /*for (var i = 0; i < 4; i++) {
             arr2 = SIMD.Float32x4.splat(be[i * 4]);
             arr4 = SIMD.Float32x4.splat(be[i * 4 + 1]);
             arr6 = SIMD.Float32x4.splat(be[i * 4 + 2]);
@@ -46,7 +47,7 @@ if (typeof SIMD !== 'undefined') {
             res = SIMD.Float32x4.add(SIMD.Float32x4.add(SIMD.Float32x4.mul(arr1, arr2), SIMD.Float32x4.mul(arr3, arr4)), SIMD.Float32x4.add(SIMD.Float32x4.mul(arr5, arr6), SIMD.Float32x4.mul(arr7, arr8)));
             SIMD.Float32x4.store(tb, i * 4, res);
         }*/
-        // hardcoded version for speed
+        // hardcoded version for speed - ~10-12% faster in Nightly
         arr2 = SIMD.Float32x4.splat(be[0]);
         arr4 = SIMD.Float32x4.splat(be[1]);
         arr6 = SIMD.Float32x4.splat(be[2]);
@@ -92,7 +93,7 @@ if (typeof SIMD !== 'undefined') {
 
     };
 
-    THREE.Matrix4.prototype.determinant = function () {
+    /*THREE.Matrix4.prototype.determinant = function () {
 
         var te = this.elements;
 
@@ -133,14 +134,41 @@ if (typeof SIMD !== 'undefined') {
         res1 = SIMD.Float32x4.sub(res1, res2);
         res1 = mul(arr0, res1);
         return res1.x + res1.y + res1.z + res1.w;
-    };
+    };*/
+    THREE.Matrix4.prototype.oldGetInverse = THREE.Matrix4.prototype.getInverse;
     THREE.Matrix4.prototype.getInverse = function (m, throwOnInvertible) {
         var te = this.elements,
             s = m.elements,
             a = SIMD.Float32x4.add,
             mul = SIMD.Float32x4.mul,
             sub = SIMD.Float32x4.sub,
-            res1, res2, res3, res4, res5, res6;
+            res1, res2, res3, res4, res5, res6, tmp1, tmp2, tmp3;
+
+
+        var le = new Float32Array(16);
+        var me = s;
+
+        var n11 = me[ 0 ], n12 = me[ 4 ], n13 = me[ 8 ], n14 = me[ 12 ];
+        var n21 = me[ 1 ], n22 = me[ 5 ], n23 = me[ 9 ], n24 = me[ 13 ];
+        var n31 = me[ 2 ], n32 = me[ 6 ], n33 = me[ 10 ], n34 = me[ 14 ];
+        var n41 = me[ 3 ], n42 = me[ 7 ], n43 = me[ 11 ], n44 = me[ 15 ];
+
+        le[ 0 ] = n23 * n34 * n42 - n24 * n33 * n42 + n24 * n32 * n43 - n22 * n34 * n43 - n23 * n32 * n44 + n22 * n33 * n44;
+        le[ 4 ] = n14 * n33 * n42 - n13 * n34 * n42 - n14 * n32 * n43 + n12 * n34 * n43 + n13 * n32 * n44 - n12 * n33 * n44;
+        le[ 8 ] = n13 * n24 * n42 - n14 * n23 * n42 + n14 * n22 * n43 - n12 * n24 * n43 - n13 * n22 * n44 + n12 * n23 * n44;
+        le[ 12 ] = n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34 - n12 * n23 * n34;
+        le[ 1 ] = n24 * n33 * n41 - n23 * n34 * n41 - n24 * n31 * n43 + n21 * n34 * n43 + n23 * n31 * n44 - n21 * n33 * n44;
+        le[ 5 ] = n13 * n34 * n41 - n14 * n33 * n41 + n14 * n31 * n43 - n11 * n34 * n43 - n13 * n31 * n44 + n11 * n33 * n44;
+        le[ 9 ] = n14 * n23 * n41 - n13 * n24 * n41 - n14 * n21 * n43 + n11 * n24 * n43 + n13 * n21 * n44 - n11 * n23 * n44;
+        le[ 13 ] = n13 * n24 * n31 - n14 * n23 * n31 + n14 * n21 * n33 - n11 * n24 * n33 - n13 * n21 * n34 + n11 * n23 * n34;
+        le[ 2 ] = n22 * n34 * n41 - n24 * n32 * n41 + n24 * n31 * n42 - n21 * n34 * n42 - n22 * n31 * n44 + n21 * n32 * n44;
+        le[ 6 ] = n14 * n32 * n41 - n12 * n34 * n41 - n14 * n31 * n42 + n11 * n34 * n42 + n12 * n31 * n44 - n11 * n32 * n44;
+        le[ 10 ] = n12 * n24 * n41 - n14 * n22 * n41 + n14 * n21 * n42 - n11 * n24 * n42 - n12 * n21 * n44 + n11 * n22 * n44;
+        le[ 14 ] = n14 * n22 * n31 - n12 * n24 * n31 - n14 * n21 * n32 + n11 * n24 * n32 + n12 * n21 * n34 - n11 * n22 * n34;
+        le[ 3 ] = n23 * n32 * n41 - n22 * n33 * n41 - n23 * n31 * n42 + n21 * n33 * n42 + n22 * n31 * n43 - n21 * n32 * n43;
+        le[ 7 ] = n12 * n33 * n41 - n13 * n32 * n41 + n13 * n31 * n42 - n11 * n33 * n42 - n12 * n31 * n43 + n11 * n32 * n43;
+        le[ 11 ] = n13 * n22 * n41 - n12 * n23 * n41 - n13 * n21 * n42 + n11 * n23 * n42 + n12 * n21 * n43 - n11 * n22 * n43;
+        le[ 15 ] = n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 + n11 * n22 * n33;
 
         var r1 = SIMD.Float32x4(s[ 9 ], s[ 13 ], s[ 5 ], s[ 9 ]),
             r2 = SIMD.Float32x4(s[ 14 ], s[ 10 ], s[ 14 ], s[ 6 ]),
@@ -151,30 +179,33 @@ if (typeof SIMD !== 'undefined') {
             r7 = SIMD.Float32x4(s[ 6 ], s[ 2 ], s[ 2 ], s[ 2 ]),
             r8 = SIMD.Float32x4(s[ 11 ], s[ 11 ], s[ 7 ], s[ 7 ]),
             r9 = SIMD.Float32x4(s[ 5 ], -s[ 1 ], s[ 1 ], -s[ 1 ]),
-            r10 = SIMD.Float32x4(s[ 14 ], s[ 14 ], s[ 14 ], s[ 10] ),
+            r10 = SIMD.Float32x4(s[ 14 ], s[ 14 ], s[ 14 ], s[ 10 ]),
             r11 = SIMD.Float32x4(s[ 9 ], -s[ 9 ], s[ 5 ], -s[ 5 ]),
             r12 = SIMD.Float32x4(s[ 15 ], s[ 15 ], s[ 15 ], s[ 11 ]),
             r13 = SIMD.Float32x4(s[ 10 ], s[ 10 ], s[ 6 ], s[ 6 ]),
             r14 = SIMD.Float32x4(s[ 12 ], s[ 8 ], s[ 12 ], s[ 4 ]),
             r15 = SIMD.Float32x4(s[ 8 ], s[ 12 ], s[ 4 ], s[ 8 ]),
             r16 = SIMD.Float32x4(s[ 12 ], -s[ 12 ], s[ 12 ], -s[ 8 ]),
-            r17 = SIMD.Float32x4(-s[ 4 ], s[ 0 ], -s[ 0 ], s[ 0 ]),
-            r18 = SIMD.Float32x4(-s[ 8 ], s[ 8 ], -s[ 4 ], s[ 4 ]),
+            r17 = SIMD.Float32x4(s[ 4 ], s[ 0 ], s[ 0 ], s[ 0 ]),
+            r18 = SIMD.Float32x4(s[ 8 ], s[ 8 ], s[ 4 ], s[ 4 ]),
             r19 = SIMD.Float32x4(s[ 6 ], s[ 2 ], s[ 2 ], s[ 2 ]),
             inv = SIMD.Float32x4(1, -1, 1, -1);
 
         res1 = mul(mul(r1, r2), r3);// -
         res2 = mul(mul(r4, r5), r3);// + - + -
         res3 = mul(mul(r6, r7), r8);// - + - +
-        res4 = mul(mul(r9, r10), r10);// - + - +
+        res4 = mul(mul(r9, r10), r8);// - + - +
         res5 = mul(mul(r11, r7), r12);// + - + -
         res6 = mul(mul(r9, r13), r12);//
-        SIMD.Float32x4.store(te, 0, a(sub(sub(sub(sub(res1, res2), res3), res4), res5), res6));
-
+        tmp1 = a(sub(sub(a(sub(res1, res2), res3), res4), res5), res6);
         //te[0] = 9 *  14 * 7 - 13 * 10 * 7 + 13 * 6 * 11 - 5 * 14 * 11 - 9 * 6 * 15 + 5 * 10 * 15;
         //te[1] = 13 * 10 * 3 - 9 * 14 * 3 - 13 * 2 * 11 + 1 * 14 * 11 + 9 * 2 * 15 - 1 * 10 * 15;
         //te[2] = 5 *  14 * 3 - 13 * 6 * 3 + 13 * 2 * 7 - 1 * 14 * 7 - 5 * 2 * 15 + 1 * 6 * 15;
         //te[3] = 9 *   6 * 3 - 5 * 10 * 3 - 9 * 2 * 7 + 1 * 10 * 7 + 5 * 2 * 11 - 1 * 6 * 11;
+        //var n11 = me[ 0 ], n12 = me[ 4 ], n13 = me[ 8 ], n14 = me[ 12 ];
+        //var n21 = me[ 1 ], n22 = me[ 5 ], n23 = me[ 9 ], n24 = me[ 13 ];
+        //var n31 = me[ 2 ], n32 = me[ 6 ], n33 = me[ 10 ], n34 = me[ 14 ];
+        //var n41 = me[ 3 ], n42 = me[ 7 ], n43 = me[ 11 ], n44 = me[ 15 ];
 
         res1 = mul(mul(r14, r5), r3);// -
         res2 = mul(mul(r15, r2), r3);// - + - +
@@ -182,7 +213,8 @@ if (typeof SIMD !== 'undefined') {
         res4 = mul(mul(r17, r10), r8);// + - + -
         res5 = mul(mul(r18, r19), r12);// - + - +
         res6 = mul(mul(r17, r13), r12);
-        SIMD.Float32x4.store(te, 4, a(sub(sub(sub(sub(res1, res2), res3), res4), res5), res6));
+        tmp2 = sub(a(a(sub(sub(res1, res2), res3), mul(res4, inv)), mul(res5, inv)), mul(res6, inv));
+
         //te[4] = 12 * 10 * 7 - 8 * 14 * 7 - 12 * 6 * 11 + 4 * 14 * 11 + 8 * 6 * 15 - 4 * 10 * 15;
         //te[5] = 8 *  14 * 3 - 12 * 10 * 3 + 12 * 2 * 11 - 0 * 14 * 11 - 8 * 2 * 15 + 0 * 10 * 15;
         //te[6] = 12 *  6 * 3 - 4 * 14 * 3 - 12 * 2 * 7 + 0 * 14 * 7 + 4 * 2 * 15 - 0 * 6 * 15;
@@ -194,24 +226,30 @@ if (typeof SIMD !== 'undefined') {
         res4 = mul(mul(r17, r6), r8);// - + - +
         res5 = mul(mul(r18, r9), r12);// + - + -
         res6 = mul(mul(r17, r11), r12);
-        SIMD.Float32x4.store(te, 8, sub(a(a(a(sub(res1, res2), mul(res3, inv)), mul(res4, inv)), mul(res5, inv)), mul(res6, inv)));
+        tmp3 = a(sub(sub(a(sub(res1, res2), mul(res3, inv)), res4), res5), res6);
         //te[8] = 8 *  13 * 7 - 12 * 9 * 7 + 12 * 5 * 11 - 4 * 13 * 11 - 8 * 5 * 15 + 4 * 9 * 15;
         //te[9] = 12 *  9 * 3 - 8 * 13 * 3 - 12 * 1 * 11 + 0 * 13 * 11 + 8 * 1 * 15 - 0 * 9 * 15;
         //te[10] = 4 * 13 * 3 - 12 * 5 * 3 + 12 * 1 * 7 - 0 * 13 * 7 - 4 * 1 * 15 + 0 * 5 * 15;
         //te[11] = 8 *  5 * 3 - 4 * 9 * 3 - 8 * 1 * 7 + 0 * 9 * 7 + 4 * 1 * 11 - 0 * 5 * 11;
-
+        
         res1 = mul(mul(r14, r1), r7);// -
         res2 = mul(mul(r15, r4), r7);// - + - +
         res3 = mul(mul(r16, r9), r13);// + - + -
         res4 = mul(mul(r17, r6), r13);// + - + -
         res5 = mul(mul(r18, r9), r10);// - + - +
         res6 = mul(mul(r17, r11), r10);
-        SIMD.Float32x4.store(te, 12, a(sub(sub(sub(sub(res1, res2), mul(res3, inv)), mul(res4, inv)), mul(res5, inv)), mul(res6, inv)));
+        res1 = sub(a(a(sub(sub(res1, res2), mul(res3, inv)), res4), res5), res6);
+
+        SIMD.Float32x4.store(te, 0, tmp1);
+        SIMD.Float32x4.store(te, 4, tmp2);
+        SIMD.Float32x4.store(te, 8, tmp3);
+        SIMD.Float32x4.store(te, 12, res1);
+console.log(te);
+console.log(le);
         //te[12] = 12 * 9 * 6 - 8 * 13 * 6 - 12 * 5 * 10 + 4 * 13 * 10 + 8 * 5 * 14 - 4 * 9 * 14;
         //te[13] = 8 * 13 * 2 - 12 * 9 * 2 + 12 * 1 * 10 - 0 * 13 * 10 - 8 * 1 * 14 + 0 * 9 * 14;
         //te[14] = 12 * 5 * 2 - 4 * 13 * 2 - 12 * 1 * 6 + 0 * 13 * 6 + 4 * 1 * 14 - 0 * 5 * 14;
         //te[15] = 4 *  9 * 2 - 8 * 5 * 2 + 8 * 1 * 6 - 0 * 9 * 6 - 4 * 1 * 10 + 0 * 5 * 10;
-
         var det = 0 * te[0] + 1 * te[4] + 2 * te[8] + 3 * te[12];
 
         if (det === 0) {
@@ -938,7 +976,7 @@ if (typeof SIMD !== 'undefined') {
                     )
                 );
             var res2 = res;
-            res = new Float32x4([0, 0, 0, 0]);
+            res = new Float32Array([0, 0, 0, 0]);
             SIMD.Float32x4.store(res, 0, res2);
 
             // calculate result * inverse quat

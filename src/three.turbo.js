@@ -6,13 +6,13 @@ Some functions might not be replaced yet. In some cases(Vector3 which is comment
 This is still work in progress so use at your own risk! When this project will be complete then probably can be merged with original three.js library, and that would be awesome! Feel free to contribute!
 
 */
- 
+
 'use strict';
 if (typeof SIMD !== 'undefined') {
-    if(SIMD.Float32x4 === undefined) {
+    if (SIMD.Float32x4 === undefined) {
         SIMD.Float32x4 = SIMD.float32x4;
     }
-    if(SIMD.Float32x4.extractLane) {
+    if (SIMD.Float32x4.extractLane) {
         Object.defineProperty(SIMD.Float32x4, 'x', {
             get: function () {
                 return SIMD.Float32x4.extractLane(this, 1);
@@ -67,7 +67,7 @@ if (typeof SIMD !== 'undefined') {
         arr8 = SIMD.Float32x4.splat(be[11]);
         res = SIMD.Float32x4.add(SIMD.Float32x4.add(SIMD.Float32x4.mul(arr1, arr2), SIMD.Float32x4.mul(arr3, arr4)), SIMD.Float32x4.add(SIMD.Float32x4.mul(arr5, arr6), SIMD.Float32x4.mul(arr7, arr8)));
         SIMD.Float32x4.store(tb, 8, res);
-        
+
         arr2 = SIMD.Float32x4.splat(be[12]);
         arr4 = SIMD.Float32x4.splat(be[13]);
         arr6 = SIMD.Float32x4.splat(be[14]);
@@ -76,6 +76,167 @@ if (typeof SIMD !== 'undefined') {
         SIMD.Float32x4.store(tb, 12, res);
 
         return this;
+    };
+
+    THREE.Matrix4.prototype.multiplyScalar = function (s) {
+
+        var te = this.elements,
+            mul = SIMD.Float32x4.splat(s);
+
+        SIMD.Float32x4.store(te, 0, SIMD.Float32x4.mul(SIMD.Float32x4.load(te, 0), mul));
+        SIMD.Float32x4.store(te, 4, SIMD.Float32x4.mul(SIMD.Float32x4.load(te, 4), mul));
+        SIMD.Float32x4.store(te, 8, SIMD.Float32x4.mul(SIMD.Float32x4.load(te, 8), mul));
+        SIMD.Float32x4.store(te, 12, SIMD.Float32x4.mul(SIMD.Float32x4.load(te, 12), mul));
+
+        return this;
+
+    };
+
+    THREE.Matrix4.prototype.determinant = function () {
+
+        var te = this.elements;
+
+        var arr0 = SIMD.Float32x4(te[3], te[7], te[11], te[15]);
+        var arr1 = SIMD.Float32x4(te[12], te[0], te[0], te[8]);
+        var arr2 = SIMD.Float32x4(te[9], te[9], te[13], te[5]);
+        var arr3 = SIMD.Float32x4(te[6], te[14], te[6], te[2]);
+        var arr4 = SIMD.Float32x4(te[8], te[0], te[0], te[0]);
+        var arr5 = SIMD.Float32x4(te[13], te[13], te[5], te[9]);
+        var arr6 = SIMD.Float32x4(te[6], te[10], te[14], te[6]);
+        var arr7 = SIMD.Float32x4(te[12], te[12], te[12], te[0]);
+        var arr8 = SIMD.Float32x4(te[5], te[1], te[1], te[5]);
+        var arr9 = SIMD.Float32x4(te[10], te[10], te[6], te[10]);
+        var arr10 = SIMD.Float32x4(te[4], te[8], te[4], te[8]);
+        var arr11 = SIMD.Float32x4(te[13], te[1], te[1], te[1]);
+        var arr12 = SIMD.Float32x4(te[10], te[14], te[14], te[6]);
+        var arr13 = SIMD.Float32x4(te[8], te[8], te[12], te[4]);
+        var arr14 = SIMD.Float32x4(te[5], te[13], te[5], te[1]);
+        var arr15 = SIMD.Float32x4(te[14], te[2], te[2], te[10]);
+        var arr16 = SIMD.Float32x4(te[4], te[12], te[4], te[4]);
+        var arr17 = SIMD.Float32x4(te[9], te[9], te[13], te[9]);
+        var arr18 = SIMD.Float32x4(te[14], te[2], te[2], te[2]);
+        var mul = SIMD.Float32x4.mul;
+
+        var res1 = SIMD.Float32x4.sub(mul(mul(arr1, arr2), arr3), mul(mul(arr4, arr5), arr6));
+        var res2 = mul(mul(arr7, arr8), arr9);
+        res2.x *= -1;
+        res2.z *= -1;
+        res1 = SIMD.Float32x4.add(res1, res2);
+        res2 = mul(mul(arr10, arr11), arr12);
+        res2.y *= -1;
+        res1 = SIMD.Float32x4.add(res1, res2);
+        res2 = mul(mul(arr13, arr14), arr15);
+        res2.w *= -1;
+        res1 = SIMD.Float32x4.add(res1, res2);
+        res2 = mul(mul(arr16, arr17), arr18);
+        res2.w *= -1;
+        res1 = SIMD.Float32x4.sub(res1, res2);
+        res1 = mul(arr0, res1);
+        return res1.x + res1.y + res1.z + res1.w;
+    };
+    THREE.Matrix4.prototype.getInverse = function (m, throwOnInvertible) {
+        var te = this.elements,
+            s = m.elements,
+            a = SIMD.Float32x4.add,
+            mul = SIMD.Float32x4.mul,
+            sub = SIMD.Float32x4.sub,
+            res1, res2, res3, res4, res5, res6;
+
+        var r1 = SIMD.Float32x4(s[ 9 ], s[ 13 ], s[ 5 ], s[ 9 ]),
+            r2 = SIMD.Float32x4(s[ 14 ], s[ 10 ], s[ 14 ], s[ 6 ]),
+            r3 = SIMD.Float32x4(s[ 7 ], s[ 3 ], s[ 3 ], s[ 3 ]),
+            r4 = SIMD.Float32x4(s[ 13 ], s[ 9 ], s[ 13 ], s[ 5 ]),
+            r5 = SIMD.Float32x4(s[ 10 ], s[ 14 ], s[ 6 ], s[ 10 ]),
+            r6 = SIMD.Float32x4(s[ 13 ], -s[ 13 ], s[ 13 ], -s[ 9 ]),
+            r7 = SIMD.Float32x4(s[ 6 ], s[ 2 ], s[ 2 ], s[ 2 ]),
+            r8 = SIMD.Float32x4(s[ 11 ], s[ 11 ], s[ 7 ], s[ 7 ]),
+            r9 = SIMD.Float32x4(s[ 5 ], -s[ 1 ], s[ 1 ], -s[ 1 ]),
+            r10 = SIMD.Float32x4(s[ 14 ], s[ 14 ], s[ 14 ], s[ 10] ),
+            r11 = SIMD.Float32x4(s[ 9 ], -s[ 9 ], s[ 5 ], -s[ 5 ]),
+            r12 = SIMD.Float32x4(s[ 15 ], s[ 15 ], s[ 15 ], s[ 11 ]),
+            r13 = SIMD.Float32x4(s[ 10 ], s[ 10 ], s[ 6 ], s[ 6 ]),
+            r14 = SIMD.Float32x4(s[ 12 ], s[ 8 ], s[ 12 ], s[ 4 ]),
+            r15 = SIMD.Float32x4(s[ 8 ], s[ 12 ], s[ 4 ], s[ 8 ]),
+            r16 = SIMD.Float32x4(s[ 12 ], -s[ 12 ], s[ 12 ], -s[ 8 ]),
+            r17 = SIMD.Float32x4(-s[ 4 ], s[ 0 ], -s[ 0 ], s[ 0 ]),
+            r18 = SIMD.Float32x4(-s[ 8 ], s[ 8 ], -s[ 4 ], s[ 4 ]),
+            r19 = SIMD.Float32x4(s[ 6 ], s[ 2 ], s[ 2 ], s[ 2 ]),
+            inv = SIMD.Float32x4(1, -1, 1, -1);
+
+        res1 = mul(mul(r1, r2), r3);// -
+        res2 = mul(mul(r4, r5), r3);// + - + -
+        res3 = mul(mul(r6, r7), r8);// - + - +
+        res4 = mul(mul(r9, r10), r10);// - + - +
+        res5 = mul(mul(r11, r7), r12);// + - + -
+        res6 = mul(mul(r9, r13), r12);//
+        SIMD.Float32x4.store(te, 0, a(sub(sub(sub(sub(res1, res2), res3), res4), res5), res6));
+
+        //te[0] = 9 *  14 * 7 - 13 * 10 * 7 + 13 * 6 * 11 - 5 * 14 * 11 - 9 * 6 * 15 + 5 * 10 * 15;
+        //te[1] = 13 * 10 * 3 - 9 * 14 * 3 - 13 * 2 * 11 + 1 * 14 * 11 + 9 * 2 * 15 - 1 * 10 * 15;
+        //te[2] = 5 *  14 * 3 - 13 * 6 * 3 + 13 * 2 * 7 - 1 * 14 * 7 - 5 * 2 * 15 + 1 * 6 * 15;
+        //te[3] = 9 *   6 * 3 - 5 * 10 * 3 - 9 * 2 * 7 + 1 * 10 * 7 + 5 * 2 * 11 - 1 * 6 * 11;
+
+        res1 = mul(mul(r14, r5), r3);// -
+        res2 = mul(mul(r15, r2), r3);// - + - +
+        res3 = mul(mul(r16, r7), r8);// + - + -
+        res4 = mul(mul(r17, r10), r8);// + - + -
+        res5 = mul(mul(r18, r19), r12);// - + - +
+        res6 = mul(mul(r17, r13), r12);
+        SIMD.Float32x4.store(te, 4, a(sub(sub(sub(sub(res1, res2), res3), res4), res5), res6));
+        //te[4] = 12 * 10 * 7 - 8 * 14 * 7 - 12 * 6 * 11 + 4 * 14 * 11 + 8 * 6 * 15 - 4 * 10 * 15;
+        //te[5] = 8 *  14 * 3 - 12 * 10 * 3 + 12 * 2 * 11 - 0 * 14 * 11 - 8 * 2 * 15 + 0 * 10 * 15;
+        //te[6] = 12 *  6 * 3 - 4 * 14 * 3 - 12 * 2 * 7 + 0 * 14 * 7 + 4 * 2 * 15 - 0 * 6 * 15;
+        //te[7] = 4 *  10 * 3 - 8 * 6 * 3 + 8 * 2 * 7 - 0 * 10 * 7 - 4 * 2 * 11 + 0 * 6 * 11;
+
+        res1 = mul(mul(r15, r4), r3);// -
+        res2 = mul(mul(r14, r1), r3);// + - + -
+        res3 = mul(mul(r16, r9), r8);// - + - +
+        res4 = mul(mul(r17, r6), r8);// - + - +
+        res5 = mul(mul(r18, r9), r12);// + - + -
+        res6 = mul(mul(r17, r11), r12);
+        SIMD.Float32x4.store(te, 8, sub(a(a(a(sub(res1, res2), mul(res3, inv)), mul(res4, inv)), mul(res5, inv)), mul(res6, inv)));
+        //te[8] = 8 *  13 * 7 - 12 * 9 * 7 + 12 * 5 * 11 - 4 * 13 * 11 - 8 * 5 * 15 + 4 * 9 * 15;
+        //te[9] = 12 *  9 * 3 - 8 * 13 * 3 - 12 * 1 * 11 + 0 * 13 * 11 + 8 * 1 * 15 - 0 * 9 * 15;
+        //te[10] = 4 * 13 * 3 - 12 * 5 * 3 + 12 * 1 * 7 - 0 * 13 * 7 - 4 * 1 * 15 + 0 * 5 * 15;
+        //te[11] = 8 *  5 * 3 - 4 * 9 * 3 - 8 * 1 * 7 + 0 * 9 * 7 + 4 * 1 * 11 - 0 * 5 * 11;
+
+        res1 = mul(mul(r14, r1), r7);// -
+        res2 = mul(mul(r15, r4), r7);// - + - +
+        res3 = mul(mul(r16, r9), r13);// + - + -
+        res4 = mul(mul(r17, r6), r13);// + - + -
+        res5 = mul(mul(r18, r9), r10);// - + - +
+        res6 = mul(mul(r17, r11), r10);
+        SIMD.Float32x4.store(te, 12, a(sub(sub(sub(sub(res1, res2), mul(res3, inv)), mul(res4, inv)), mul(res5, inv)), mul(res6, inv)));
+        //te[12] = 12 * 9 * 6 - 8 * 13 * 6 - 12 * 5 * 10 + 4 * 13 * 10 + 8 * 5 * 14 - 4 * 9 * 14;
+        //te[13] = 8 * 13 * 2 - 12 * 9 * 2 + 12 * 1 * 10 - 0 * 13 * 10 - 8 * 1 * 14 + 0 * 9 * 14;
+        //te[14] = 12 * 5 * 2 - 4 * 13 * 2 - 12 * 1 * 6 + 0 * 13 * 6 + 4 * 1 * 14 - 0 * 5 * 14;
+        //te[15] = 4 *  9 * 2 - 8 * 5 * 2 + 8 * 1 * 6 - 0 * 9 * 6 - 4 * 1 * 10 + 0 * 5 * 10;
+
+        var det = 0 * te[0] + 1 * te[4] + 2 * te[8] + 3 * te[12];
+
+        if (det === 0) {
+
+            var msg = 'THREE.Matrix4.getInverse(): can\'t invert matrix, determinant is 0';
+
+            if (throwOnInvertible || false) {
+
+                throw new Error(msg);
+
+            } else {
+
+                THREE.warn(msg);
+
+            }
+
+            this.identity();
+
+            return this;
+        }
+
+        this.multiplyScalar(1 / det);
+
+        return this;
+
     };
 
     THREE.Vector4 = function (x, y, z, w) {
@@ -142,13 +303,13 @@ if (typeof SIMD !== 'undefined') {
         },
 
         getComponent: function (index) {
-            if(index === 0) {
+            if (index === 0) {
                 return this.simd.x;
-            } else if(index === 1) {
+            } else if (index === 1) {
                 return this.simd.y;
-            } else if(index === 2) {
+            } else if (index === 2) {
                 return this.simd.z;
-            } else if(index === 3) {
+            } else if (index === 3) {
                 return this.simd.w;
             }
         },
@@ -570,6 +731,9 @@ if (typeof SIMD !== 'undefined') {
         }
     };
 
+    /*
+        //unfortunately this only slows three.js down
+
         THREE.Vector3.prototype.add = function (v, w) {
             if ( w !== undefined ) {
                 THREE.warn( 'THREE.Vector3: .add() now only accepts one argument. Use .addVectors( a, b ) instead.' );
@@ -774,7 +938,7 @@ if (typeof SIMD !== 'undefined') {
                     )
                 );
             var res2 = res;
-            res = new Float32Array([0, 0, 0, 0]);
+            res = new Float32x4([0, 0, 0, 0]);
             SIMD.Float32x4.store(res, 0, res2);
 
             // calculate result * inverse quat
@@ -807,14 +971,14 @@ if (typeof SIMD !== 'undefined') {
         THREE.Vector3.prototype.transformDirection = function ( m ) {
             var e = m.elements;
 
-            var arr1 = SIMD.Float32Array(e[0], e[1], e[2], 1);
-            var arr2 = SIMD.Float32Array(e[4], e[5], e[6], 1);
-            var arr3 = SIMD.Float32Array(e[8], e[9], e[10], 1);
-            var arrX = SIMD.Float32Array.splat(x);
-            var arrY = SIMD.Float32Array.splat(y);
-            var arrZ = SIMD.Float32Array.splat(z);
+            var arr1 = SIMD.Float32x4(e[0], e[1], e[2], 1);
+            var arr2 = SIMD.Float32x4(e[4], e[5], e[6], 1);
+            var arr3 = SIMD.Float32x4(e[8], e[9], e[10], 1);
+            var arrX = SIMD.Float32x4.splat(x);
+            var arrY = SIMD.Float32x4.splat(y);
+            var arrZ = SIMD.Float32x4.splat(z);
 
-            var res = SIMD.Float32x4.add(SIMD.Float32Array.add(SIMD.Float32Array.mul(arr1, arrX), SIMD.Float32Array.mul(arr2, arrY)), SIMD.Float32Array.mul(arr3, arrZ));
+            var res = SIMD.Float32x4.add(SIMD.Float32x4.add(SIMD.Float32x4.mul(arr1, arrX), SIMD.Float32x4.mul(arr2, arrY)), SIMD.Float32x4.mul(arr3, arrZ));
 
             this.x = res.x;
             this.y = res.y;
@@ -907,7 +1071,22 @@ if (typeof SIMD !== 'undefined') {
             return this;
 
         };
-/*
+        THREE.Vector3.prototype.min = function () {
+            var res = SIMD.Float32x4.neg(SIMD.Float32x4(this.x, this.y, this.z, 1));
+
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z; 
+
+            return this;
+
+        };
+        */
+
+
+    /*
+
+// no native simd funcitons 
         clampScalar: ( function () {
 
             var min, max;
@@ -970,18 +1149,7 @@ if (typeof SIMD !== 'undefined') {
 
         },*/
 
-         THREE.Vector3.prototype.min = function () {
-            var res = SIMD.Float32x4.neg(SIMD.Float32x4(this.x, this.y, this.z, 1));
-
-            this.x = res.x;
-            this.y = res.y;
-            this.z = res.z; 
-
-            return this;
-
-        };
-
-/*
+    /*
     THREE.Vector3.prototype = {
         constructor: THREE.Vector3,
         set: function (x, y, z) {

@@ -12,10 +12,15 @@ if (typeof SIMD !== 'undefined') {
     if(SIMD.Float32x4 === undefined) {
         SIMD.Float32x4 = SIMD.float32x4;
     }
-    if(SIMD.Float32x4.extractLane === undefined) {
-        SIMD.Float32x4.extractLane = function () {
-            return 0;
-        };
+    if(SIMD.Float32x4.extractLane) {
+        Object.defineProperty(SIMD.Float32x4, 'x', {
+            get: function () {
+                return SIMD.Float32x4.extractLane(this, 1);
+            },
+            set: function (val) {
+                SIMD.Float32x4.replaceLane(this, 1, val);
+            }
+        });
     }
     console.log('SIMD mode enabled');
     THREE.Matrix4.prototype.multiplyMatrices = function (a, b) {
@@ -78,7 +83,7 @@ if (typeof SIMD !== 'undefined') {
         this.simd = SIMD.Float32x4(x || 0, y || 0, z || 0, (w !== undefined) ? w : 1);
         Object.defineProperty(this, 'x', {
             get: function () {
-                return _this.simd.x || SIMD.Float32x4.extractLane(_this.simd, 0);
+                return _this.simd.x;
             },
             set: function (val) {
                 _this.setX(val);
@@ -86,7 +91,7 @@ if (typeof SIMD !== 'undefined') {
         });
         Object.defineProperty(this, 'y', {
             get: function () {
-                return _this.simd.y || SIMD.Float32x4.extractLane(_this.simd, 1);
+                return _this.simd.y;
             },
             set: function (val) {
                 _this.setY(val);
@@ -94,7 +99,7 @@ if (typeof SIMD !== 'undefined') {
         });
         Object.defineProperty(this, 'z', {
             get: function () {
-                return _this.simd.z || SIMD.Float32x4.extractLane(_this.simd, 2);
+                return _this.simd.z;
             },
             set: function (val) {
                 _this.setZ(val);
@@ -102,7 +107,7 @@ if (typeof SIMD !== 'undefined') {
         });
         Object.defineProperty(this, 'w', {
             get: function () {
-                return _this.simd.w || SIMD.Float32x4.extractLane(_this.simd, 3);
+                return _this.simd.w;
             },
             set: function (val) {
                 _this.setW(val);
@@ -116,38 +121,36 @@ if (typeof SIMD !== 'undefined') {
             return this;
         },
         setX: function (x) {
-            this.simd = SIMD.Float32x4.replaceLane(this.simd, 0, x);
+            this.simd.x = x;
             return this;
         },
         setY: function (y) {
-            this.simd = SIMD.Float32x4.replaceLane(this.simd, 1, y);
+            this.simd.y = y;
             return this;
         },
         setZ: function (z) {
-            this.simd = SIMD.Float32x4.replaceLane(this.simd, 2, z);
+            this.simd.z = z;
             return this;
         },
         setW: function (w) {
-            this.simd = SIMD.Float32x4.replaceLane(this.simd, 3, w);
+            this.simd.w = w;
             return this;
         },
         setComponent: function (index, value) {
-            this.simd = SIMD.Float32x4.replaceLane(this.simd, index, value);
+            var props = ['x', 'y', 'z', 'w'];
+            this.simd[props[index]] = value;
         },
 
         getComponent: function (index) {
-            if(SIMD.Float32x4.extractLane === undefined) {
-                if(index === 0) {
-                    return _this.simd.x;
-                } else if(index === 1) {
-                    return _this.simd.y;
-                } else if(index === 2) {
-                    return _this.simd.z;
-                } else if(index === 3) {
-                    return _this.simd.w;
-                }
+            if(index === 0) {
+                return this.simd.x;
+            } else if(index === 1) {
+                return this.simd.y;
+            } else if(index === 2) {
+                return this.simd.z;
+            } else if(index === 3) {
+                return this.simd.w;
             }
-            return SIMD.Float32x4.extractLane(this.simd, index);
         },
         copy: function (v) {
             this.simd = SIMD.Float32x4.check(v);
@@ -566,33 +569,32 @@ if (typeof SIMD !== 'undefined') {
             return new THREE.Vector4(this.x, this.y, this.z, this.w);
         }
     };
-/*
-    
+
         THREE.Vector3.prototype.add = function (v, w) {
             if ( w !== undefined ) {
                 THREE.warn( 'THREE.Vector3: .add() now only accepts one argument. Use .addVectors( a, b ) instead.' );
                 return this.addVectors( v, w );
             }
             this.simd = SIMD.Float32x4.add(SIMD.Float32x4(this.x, this.y, this.z, 0), SIMD.Float32x4(v.x, v.y, v.z, 0));
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
         };
         THREE.Vector3.prototype.addScalar = function (s) {
             this.simd = SIMD.Float32x4.add(SIMD.Float32x4(this.x, this.y, this.z, 0), SIMD.Float32x4.splat(s));
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
         };
         THREE.Vector3.prototype.addVectors = function (a, b) {
             this.simd = SIMD.Float32x4.add(SIMD.Float32x4(a.x, a.y, a.z, a.w), SIMD.Float32x4(b.x, b.y, b.z));
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
         };
@@ -602,26 +604,26 @@ if (typeof SIMD !== 'undefined') {
                 return this.subVectors( v, w );
             }
             this.simd = SIMD.Float32x4.sub(SIMD.Float32x4(this.x, this.y, this.z, 0), SIMD.Float32x4(v.x, v.y, v.z, 0));
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
         };
         THREE.Vector3.prototype.subScalar = function (s) {
             this.simd = SIMD.Float32x4.sub(SIMD.Float32x4(this.x, this.y, this.z, 0), SIMD.Float32x4.splat(s));
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
         };
         THREE.Vector3.prototype.subVectors = function (a, b) {
             this.simd = SIMD.Float32x4.sub(SIMD.Float32x4(a.x, a.y, a.z, 1), SIMD.Float32x4(b.x, b.y, b.z, 1));
             //debugger;
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
         };
@@ -631,28 +633,28 @@ if (typeof SIMD !== 'undefined') {
                 return this.multiplyVectors( v, w );
             }
             this.simd = SIMD.Float32x4.mul(SIMD.Float32x4(this.x, this.y, this.z, 0), SIMD.Float32x4(v.x, v.y, v.z, 0));
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
         };
         THREE.Vector3.prototype.multiplyScalar = function (scalar) {
             this.simd = SIMD.Float32x4.mul(SIMD.Float32x4(this.x, this.y, this.z, 0), SIMD.Float32x4.splat(scalar));
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
         };
         THREE.Vector3.prototype.multiplyVectors = function ( a, b ) {
             this.simd = SIMD.Float32x4.mul(SIMD.Float32x4(a.x, a.y, a.z, 0), SIMD.Float32x4(b.x, b.y, b.z, 0));
-            this.x = SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
-        };*/
+        };
 
         THREE.Vector3.prototype.applyMatrix3 = function ( m ) {
             var x = this.x;
@@ -675,9 +677,9 @@ if (typeof SIMD !== 'undefined') {
                     SIMD.Float32x4.splat(z))
                 );
 
-            this.x = res.x || SIMD.Float32x4.extractLane(res, 0);
-            this.y = res.y || SIMD.Float32x4.extractLane(res, 1);
-            this.z = res.z || SIMD.Float32x4.extractLane(res, 2);
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z;
 
             return this;
 
@@ -699,9 +701,9 @@ if (typeof SIMD !== 'undefined') {
                 SIMD.Float32x4.add(SIMD.Float32x4.mul(arr1, arr2), SIMD.Float32x4.mul(arr3, arr4)),
                 SIMD.Float32x4.add(SIMD.Float32x4.mul(arr5, arr6), arr7)
             );
-            this.x = this.simd.x || SIMD.Float32x4.extractLane(this.simd, 0);
-            this.y = this.simd.y || SIMD.Float32x4.extractLane(this.simd, 1);
-            this.z = this.simd.z || SIMD.Float32x4.extractLane(this.simd, 2);
+            this.x = this.simd.x;
+            this.y = this.simd.y;
+            this.z = this.simd.z;
 
             return this;
         };
@@ -738,9 +740,9 @@ if (typeof SIMD !== 'undefined') {
                 SIMD.Float32x4(arr8)
             );
             
-            this.x = res.x || SIMD.Float32x4.extractLane(res, 0);
-            this.y = res.y || SIMD.Float32x4.extractLane(res, 1);
-            this.z = res.z || SIMD.Float32x4.extractLane(res, 2);
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z;
 
             return this;
 
@@ -794,312 +796,61 @@ if (typeof SIMD !== 'undefined') {
                     SIMD.Float32x4(res[2], res[0], res[1], 0), SIMD.Float32x4(-qy, -qz, -qx, 0)
                 )
             );
-            this.x = res.x || SIMD.Float32x4.extractLane(res, 0);
-            this.y = res.y || SIMD.Float32x4.extractLane(res, 1);
-            this.z = res.z || SIMD.Float32x4.extractLane(res, 2);
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z;
 
             return this;
 
         };
 
-/*
-    THREE.Vector3.prototype = {
-        constructor: THREE.Vector3,
-        set: function (x, y, z) {
-            this.simd = SIMD.Float32x4(x, y, z, 0);
-            return this;
-        },
-        setX: function (x) {
-            this.simd = SIMD.Float32x4.replaceLane(this.simd, 0, x);
-            return this;
-        },
-        setY: function (y) {
-            this.simd = SIMD.Float32x4.replaceLane(this.simd, 1, y);
-            return this;
-        },
-        setZ: function (z) {
-            this.simd = SIMD.Float32x4.replaceLane(this.simd, 2, z);
-            return this;
-        },
-        setComponent: function (index, value) {
-            this.simd = SIMD.Float32x4.replaceLane(this.simd, index, value);
-        },
-
-        getComponent: function (index) {
-            SIMD.Float32x4.extractLane(this.simd, index);
-        },
-        copy: function (v) {
-            this.simd = SIMD.Float32x4(v[0], v[1], v[2]);
-            return this;
-        },
-        add: function (v, w) {
-            if ( w !== undefined ) {
-                THREE.warn( 'THREE.Vector3: .add() now only accepts one argument. Use .addVectors( a, b ) instead.' );
-                return this.addVectors( v, w );
-            }
-            this.simd = SIMD.Float32x4.add(this.simd, SIMD.Float32x4(v.x, v.y, v.z, 0));
-            return this;
-        },
-        addScalar: function (s) {
-            this.simd = SIMD.Float32x4.add(this.simd, SIMD.Float32x4.splat(s));
-            return this;
-        },
-        addVectors: function (a, b) {
-            this.simd = SIMD.Float32x4.add(SIMD.Float32x4(a.x, a.y, a.z, a.w), SIMD.Float32x4(b.x, b.y, b.z));
-            return this;
-        },
-        sub: function ( v, w ) {
-            if ( w !== undefined ) {
-                THREE.warn( 'THREE.Vector3: .sub() now only accepts one argument. Use .subVectors( a, b ) instead.' );
-                return this.subVectors( v, w );
-            }
-            this.simd = SIMD.Float32x4.sub(this.simd, SIMD.Float32x4(v.x, v.y, v.z, 0));
-            return this;
-        },
-        subScalar: function (s) {
-            this.simd = SIMD.Float32x4.sub(this.simd, SIMD.Float32x4.splat(s));
-            return this;
-        },
-        subVectors: function (a, b) {
-            this.simd = SIMD.Float32x4.sub(SIMD.Float32x4(a.x, a.y, a.z, a.w), SIMD.Float32x4(b.x, b.y, b.z, 0));
-            return this;
-        },
-        multiply: function ( v, w ) {
-            if ( w !== undefined ) {
-                THREE.warn( 'THREE.Vector3: .multiply() now only accepts one argument. Use .multiplyVectors( a, b ) instead.' );
-                return this.multiplyVectors( v, w );
-            }
-            this.simd = SIMD.Float32x4.mul(this.simd, SIMD.Float32x4(v.x, v.y, v.z, 0));
-            return this;
-        },
-        multiplyScalar: function (scalar) {
-            this.simd = SIMD.Float32x4.mul(this.simd, SIMD.Float32x4.splat(scalar));
-            return this;
-        },
-
-        multiplyVectors: function ( a, b ) {
-            this.simd = SIMD.Float32x4.mul(SIMD.Float32x4(a.x, a.y, a.z, 0), SIMD.Float32x4(b.x, b.y, b.z, 0));
-            return this;
-        },
-
-        applyEuler: function () {
-            var quaternion;
-            return function ( euler ) {
-                if ( euler instanceof THREE.Euler === false ) {
-                    THREE.error( 'THREE.Vector3: .applyEuler() now expects a Euler rotation rather than a Vector3 and order.' );
-                }
-                if ( quaternion === undefined ) quaternion = new THREE.Quaternion();
-                this.applyQuaternion( quaternion.setFromEuler( euler ) );
-                return this;
-            };
-        }(),
-
-        applyAxisAngle: function () {
-
-            var quaternion;
-
-            return function ( axis, angle ) {
-
-                if ( quaternion === undefined ) quaternion = new THREE.Quaternion();
-
-                this.applyQuaternion( quaternion.setFromAxisAngle( axis, angle ) );
-
-                return this;
-
-            };
-
-        }(),
-
-        applyMatrix3: function ( m ) {
-            var x = this.x;
-            var y = this.y;
-            var z = this.z;
-
+        THREE.Vector3.prototype.transformDirection = function ( m ) {
             var e = m.elements;
 
-            var res = SIMD.Float32x4.add(
-                SIMD.Float32x4.add(
-                    SIMD.Float32x4.mul(
-                        SIMD.Float32x4(e[ 0 ], e[ 1 ], e[ 2 ], 0), 
-                        SIMD.Float32x4.splat(x)), 
-                    SIMD.Float32x4.mul(
-                        SIMD.Float32x4(e[ 3 ], e[ 4 ], e[ 5 ], 0), 
-                        SIMD.Float32x4.splat(y))
-                    ),
-                SIMD.Float32x4.mul(
-                    SIMD.Float32x4(e[ 3 ], e[ 4 ], e[ 5 ], 0), 
-                    SIMD.Float32x4.splat(z))
-                );
+            var arr1 = SIMD.Float32Array(e[0], e[1], e[2], 1);
+            var arr2 = SIMD.Float32Array(e[4], e[5], e[6], 1);
+            var arr3 = SIMD.Float32Array(e[8], e[9], e[10], 1);
+            var arrX = SIMD.Float32Array.splat(x);
+            var arrY = SIMD.Float32Array.splat(y);
+            var arrZ = SIMD.Float32Array.splat(z);
 
-            this.x = SIMD.Float32x4.extractLane(res, 0);
-            this.y = SIMD.Float32x4.extractLane(res, 1);
-            this.z = SIMD.Float32x4.extractLane(res, 2);
+            var res = SIMD.Float32x4.add(SIMD.Float32Array.add(SIMD.Float32Array.mul(arr1, arrX), SIMD.Float32Array.mul(arr2, arrY)), SIMD.Float32Array.mul(arr3, arrZ));
 
-            return this;
-
-        },
-
-        applyMatrix4: function ( m ) {
-            // input: THREE.Matrix4 affine matrix
-
-            var e = m.elements;
-            var arr1 = SIMD.Float32x4(e[0], e[1], e[2], 0);
-            var arr2 = SIMD.Float32x4.splat(this.x);
-            var arr3 = SIMD.Float32x4(e[4], e[5], e[6], 0);
-            var arr4 = SIMD.Float32x4.splat(this.y);
-            var arr5 = SIMD.Float32x4(e[8], e[9], e[10], 0);
-            var arr6 = SIMD.Float32x4.splat(this.z);
-            var arr7 = SIMD.Float32x4(e[12], e[13], e[14], 0);
-
-            this.simd = SIMD.Float32x4.add(
-                SIMD.Float32x4.add(SIMD.Float32x4.mul(arr1, arr2), SIMD.Float32x4.mul(arr3, arr4)),
-                SIMD.Float32x4.add(SIMD.Float32x4.mul(arr5, arr6), arr7)
-            );
-            return this;
-        },
-
-        applyProjection: function ( m ) {
-
-            // input: THREE.Matrix4 projection matrix
-
-            var x = this.x, y = this.y, z = this.z;
-
-            var e = m.elements;
-            var d = 1 / ( e[ 3 ] * x + e[ 7 ] * y + e[ 11 ] * z + e[ 15 ] ); // perspective divide
-
-            this.x = ( e[ 0 ] * x + e[ 4 ] * y + e[ 8 ]  * z + e[ 12 ] ) * d;
-            this.y = ( e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z + e[ 13 ] ) * d;
-            this.z = ( e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z + e[ 14 ] ) * d;
-
-            return this;
-
-        },
-
-        applyQuaternion: function ( q ) {
-
-            var x = this.x;
-            var y = this.y;
-            var z = this.z;
-
-            var qx = q.x;
-            var qy = q.y;
-            var qz = q.z;
-            var qw = q.w;
-
-            // calculate quat * vector
-            var res = SIMD.Float32x4.sub(
-                SIMD.Float32x4.add(
-                    SIMD.Float32x4.mul(
-                        SIMD.Float32x4(qw, qw, qw, -qw), SIMD.Float32x4(x, y, z, x)
-                        ),
-                    SIMD.Float32x4.mul(
-                        SIMD.Float32x4(qy, qz, qx, -qy), SIMD.Float32x4(z, x, y, y)
-                        )
-                    ),
-                SIMD.Float32x4.mul(
-                    SIMD.Float32x4(qz, qx, qy, qz), SIMD.Float32x4(y, z, x, z)
-                    )
-                );
-            var res2 = res;
-            res = new Float32Array([0, 0, 0, 0]);
-            SIMD.Float32x4.store(res, 0, res2);
-
-            // calculate result * inverse quat
-            res = SIMD.Float32x4.sub(
-                SIMD.Float32x4.add(
-                    SIMD.Float32x4.add(
-                        SIMD.Float32x4.mul(
-                            SIMD.Float32x4(res[0], res[1], res[2], 0), SIMD.Float32x4(qw, qw, qw, 0)
-                        ),
-                        SIMD.Float32x4.mul(
-                            SIMD.Float32x4(res[3], res[3], res[3], 0), SIMD.Float32x4(-qx, -qy, -qz, 0)
-                        )
-                    ),
-                    SIMD.Float32x4.mul(
-                        SIMD.Float32x4(res[1], res[2], res[0], 0), SIMD.Float32x4(-qz, -qx, -qy, 0)
-                    )
-                ),
-                SIMD.Float32x4.mul(
-                    SIMD.Float32x4(res[2], res[0], res[1], 0), SIMD.Float32x4(-qy, -qz, -qx, 0)
-                )
-            );
-            this.x = SIMD.Float32x4.extractLane(res, 0);
-            this.y = SIMD.Float32x4.extractLane(res, 0);
-            this.z = SIMD.Float32x4.extractLane(res, 0);
-
-            return this;
-
-        },
-
-        project: function () {
-
-            var matrix;
-
-            return function ( camera ) {
-
-                if ( matrix === undefined ) matrix = new THREE.Matrix4();
-
-                matrix.multiplyMatrices( camera.projectionMatrix, matrix.getInverse( camera.matrixWorld ) );
-                return this.applyProjection( matrix );
-
-            };
-
-        }(),
-
-        unproject: function () {
-
-            var matrix;
-
-            return function ( camera ) {
-
-                if ( matrix === undefined ) matrix = new THREE.Matrix4();
-
-                matrix.multiplyMatrices( camera.matrixWorld, matrix.getInverse( camera.projectionMatrix ) );
-                return this.applyProjection( matrix );
-
-            };
-
-        }(),
-
-        transformDirection: function ( m ) {
-
-            // input: THREE.Matrix4 affine matrix
-            // vector interpreted as a direction
-
-            var x = this.x, y = this.y, z = this.z;
-
-            var e = m.elements;
-
-            this.x = e[ 0 ] * x + e[ 4 ] * y + e[ 8 ]  * z;
-            this.y = e[ 1 ] * x + e[ 5 ] * y + e[ 9 ]  * z;
-            this.z = e[ 2 ] * x + e[ 6 ] * y + e[ 10 ] * z;
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z;
 
             this.normalize();
 
             return this;
 
-        },
+        };
 
 
-        divide: function ( v ) {
+        THREE.Vector3.prototype.divide = function ( v ) {
+            var arr1 = SIMD.Float32x4(this.x, this.y, this.z, 1);
+            var arr2 = SIMD.Float32x4(v.x, v.y, v.z, 1);
 
-            this.x /= v.x;
-            this.y /= v.y;
-            this.z /= v.z;
+            var res = SIMD.Float32x4.div(arr1, arr2);
+
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z;
 
             return this;
 
-        },
+        };
 
-        divideScalar: function ( scalar ) {
+        THREE.Vector3.prototype.divideScalar = function ( scalar ) {
+            var arr1 = SIMD.Float32x4(this.x, this.y, this.z, 1);
+            var arr2 = SIMD.Float32x4.splat(scalar);
 
             if ( scalar !== 0 ) {
+                var res = SIMD.Float32x4.div(arr1, arr2);
 
-                var invScalar = 1 / scalar;
-
-                this.x *= invScalar;
-                this.y *= invScalar;
-                this.z *= invScalar;
+                this.x = res.x;
+                this.y = res.y;
+                this.z = res.z;
 
             } else {
 
@@ -1111,94 +862,52 @@ if (typeof SIMD !== 'undefined') {
 
             return this;
 
-        },
+        };
 
-        min: function ( v ) {
+        THREE.Vector3.prototype.min = function ( v ) {
+            var arr1 = SIMD.Float32x4(this.x, this.y, this.z, 1);
+            var arr2 = SIMD.Float32x4(v.x, v.y, v.z, 1);
 
-            if ( this.x > v.x ) {
+            var res = SIMD.Float32x4.min(arr1, arr2);
 
-                this.x = v.x;
-
-            }
-
-            if ( this.y > v.y ) {
-
-                this.y = v.y;
-
-            }
-
-            if ( this.z > v.z ) {
-
-                this.z = v.z;
-
-            }
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z; 
 
             return this;
 
-        },
+        };
 
-        max: function ( v ) {
+        THREE.Vector3.prototype.max = function ( v ) {
 
-            if ( this.x < v.x ) {
+            var arr1 = SIMD.Float32x4(this.x, this.y, this.z, 1);
+            var arr2 = SIMD.Float32x4(v.x, v.y, v.z, 1);
 
-                this.x = v.x;
+            var res = SIMD.Float32x4.max(arr1, arr2);
 
-            }
-
-            if ( this.y < v.y ) {
-
-                this.y = v.y;
-
-            }
-
-            if ( this.z < v.z ) {
-
-                this.z = v.z;
-
-            }
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z; 
 
             return this;
 
-        },
+        };
 
-        clamp: function ( min, max ) {
+        THREE.Vector3.prototype.clamp = function ( min, max ) {
 
-            // This function assumes min < max, if this assumption isn't true it will not operate correctly
+           var arr1 = SIMD.Float32x4(min.x, min.y, min.z, 1);
+            var arr2 = SIMD.Float32x4(max.x, max.y, max.z, 1);
 
-            if ( this.x < min.x ) {
+            var res = SIMD.Float32x4.clamp(arr1, arr2);
 
-                this.x = min.x;
-
-            } else if ( this.x > max.x ) {
-
-                this.x = max.x;
-
-            }
-
-            if ( this.y < min.y ) {
-
-                this.y = min.y;
-
-            } else if ( this.y > max.y ) {
-
-                this.y = max.y;
-
-            }
-
-            if ( this.z < min.z ) {
-
-                this.z = min.z;
-
-            } else if ( this.z > max.z ) {
-
-                this.z = max.z;
-
-            }
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z; 
 
             return this;
 
-        },
-
+        };
+/*
         clampScalar: ( function () {
 
             var min, max;
@@ -1259,17 +968,54 @@ if (typeof SIMD !== 'undefined') {
 
             return this;
 
-        },
+        },*/
 
-        negate: function () {
+         THREE.Vector3.prototype.min = function () {
+            var res = SIMD.Float32x4.neg(SIMD.Float32x4(this.x, this.y, this.z, 1));
 
-            this.x = - this.x;
-            this.y = - this.y;
-            this.z = - this.z;
+            this.x = res.x;
+            this.y = res.y;
+            this.z = res.z; 
 
             return this;
 
+        };
+
+/*
+    THREE.Vector3.prototype = {
+        constructor: THREE.Vector3,
+        set: function (x, y, z) {
+            this.simd = SIMD.Float32x4(x, y, z, 0);
+            return this;
         },
+        setX: function (x) {
+            this.simd = SIMD.Float32x4.replaceLane(this.simd, 0, x);
+            return this;
+        },
+        setY: function (y) {
+            this.simd = SIMD.Float32x4.replaceLane(this.simd, 1, y);
+            return this;
+        },
+        setZ: function (z) {
+            this.simd = SIMD.Float32x4.replaceLane(this.simd, 2, z);
+            return this;
+        },
+        setComponent: function (index, value) {
+            this.simd = SIMD.Float32x4.replaceLane(this.simd, index, value);
+        },
+
+        getComponent: function (index) {
+            SIMD.Float32x4.extractLane(this.simd, index);
+        },
+        copy: function (v) {
+            this.simd = SIMD.Float32x4(v[0], v[1], v[2]);
+            return this;
+        },
+
+
+
+
+        /// continue from here
 
         dot: function ( v ) {
 
